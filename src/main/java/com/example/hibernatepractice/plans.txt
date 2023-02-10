@@ -1,4 +1,3 @@
-Ideas:
--Passwords
--random example
--notes index
+- make all command print numbers to be used for open or display
+- keep track of views of the file and store in db. sort based off that too
+

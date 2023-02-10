@@ -23,30 +23,28 @@ public class SearchImpl implements Search {
 
     private List<Note> filesNoLongerInSystem = new ArrayList<>();
 
-    private String lastNoteFileLocation;
+    private List<String> lastNotes;
 
     @Override
-    public void search(List<String> tags, boolean scanFiles, boolean displayAllMatches) {
+    public void search(List<String> tags, boolean scanFiles, boolean displayFirstMatch) {
+        System.out.print(ConsoleColors.BLUE);
 
         List<String> files = getRelatedFilesSorted(tags, scanFiles);
         Collections.reverse(files);
-        if (displayAllMatches) {
-            files.forEach(System.out::println);
-            lastNoteFileLocation = files.get(0);
+        lastNotes = files;
+        if (!displayFirstMatch) {
+            for (int i = 0; i < files.size(); i++) {
+                System.out.print(i + " ");
+                System.out.println(files.get(i));
+            }
         }
         else {
             try {
                 if (files.size() > 0) {
-                    System.out.print(ConsoleColors.BLUE);
                     System.out.println( new String(Files.readAllBytes(Paths.get(files.get(0)))) );
-                    System.out.println(ConsoleColors.RESET);
-
-                    lastNoteFileLocation = files.get(0);
                 }
                 else {
-                    System.out.print(ConsoleColors.BLUE);
                     System.out.println("No notes turned up with that/those tag(s)");
-                    System.out.print(ConsoleColors.RESET);
                 }
             } catch (IOException e) {
                 filesNoLongerInSystem.addAll(
@@ -56,16 +54,44 @@ public class SearchImpl implements Search {
         }
 
         noteRepository.deleteAll(filesNoLongerInSystem);
+        System.out.println(ConsoleColors.RESET);
     }
 
     @Override
     public void open() {
-        FileUtil.openFileInTextEdit(lastNoteFileLocation);
+        FileUtil.openFileInTextEdit(lastNotes.get(0));
+    }
+
+    @Override
+    public void open(int lastSearchNumber) {
+        FileUtil.openFileInTextEdit(lastNotes.get(lastSearchNumber));
     }
 
     @Override
     public void open(String fileLocation) {
         FileUtil.openFileInTextEdit(fileLocation);
+    }
+
+    @Override
+    public void display(int lastSearchNumber) {
+        System.out.print(ConsoleColors.BLUE);
+        try {
+            System.out.println( new String(Files.readAllBytes(Paths.get(lastNotes.get(lastSearchNumber)))) );
+        } catch (Exception e) {
+            System.out.println("Couldn't find the file for that number");
+        }
+        System.out.print(ConsoleColors.RESET);
+    }
+
+    @Override
+    public void display(String fileLocation) {
+        System.out.print(ConsoleColors.BLUE);
+        try {
+            System.out.println( new String(Files.readAllBytes(Paths.get(fileLocation))) );
+        } catch (Exception e) {
+            System.out.println("Couldn't find that file");
+        }
+        System.out.print(ConsoleColors.RESET);
     }
 
 

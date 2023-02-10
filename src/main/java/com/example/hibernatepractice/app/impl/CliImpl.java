@@ -29,20 +29,25 @@ public class CliImpl implements Cli {
     public void getUserInput() {
         boolean run = true;
         settingsManager.doSetUp();
+        System.out.print(">");
         while (run) {
-            System.out.print(">");
-            Scanner in = new Scanner(System.in);
-            StringTokenizer tokens = new StringTokenizer(in.nextLine());
-            List<String> args = new ArrayList<>();
-            tokens.asIterator().forEachRemaining(t -> args.add(t.toString()));
             try{
-                handleCommand(args);
+                Scanner in = new Scanner(System.in);
+                if (in.hasNextLine()) {
+                    StringTokenizer tokens = new StringTokenizer(in.nextLine());
+                    List<String> args = new ArrayList<>();
+                    tokens.asIterator().forEachRemaining(t -> args.add(t.toString()));
+                    handleCommand(args);
+                    System.out.print(">");
+                }
             } catch (Exception e) {
+                System.out.print(ConsoleColors.RED);
                 System.out.println(e.getMessage());
                 e.printStackTrace();
                 System.out.println("Something went wrong with your last command. We probably " +
                         "forgot to handle something in the code :(");
                 System.out.println("Check your last command for mistakes. Sorry!");
+                System.out.print(ConsoleColors.RESET);
             }
         }
     }
@@ -58,13 +63,14 @@ public class CliImpl implements Cli {
             System.out.println("add <file location> <tags...>");
             System.out.println("delete <file location>");
             System.out.println("search <tags...>");
-            System.out.println("    -d will list all files with matches");
+            System.out.println("    -d print the first matching file");
             System.out.println("    -a will open files and scan for tag matches. (Slower)");
             System.out.println("all");
             System.out.println("    displays all notes in db");
-            System.out.println("    -t prints all notes without the tags");
+            System.out.println("    -t prints all notes with the tags");
             System.out.println("open");
-            System.out.println("    <file to open> or leave blank to open file from last search command");
+            System.out.println("    <file to open> or leave blank to open first file from last search command");
+            System.out.println("    <number from last search> to open file from last search command");
             System.out.println("create <file name> <tags...>");
             System.out.println("    creates a new entry as well as new file which then opens in text edit");
             System.out.println("    in the default folder");
@@ -73,6 +79,9 @@ public class CliImpl implements Cli {
             System.out.println("removeTag <file location> <tag(s)...>");
             System.out.println("ls <path>");
             System.out.println("    -h prints contents of default notes folder");
+            System.out.println("display");
+            System.out.println("    <file to open> to open first file from last search command");
+            System.out.println("    <number from last search> to open file from last search command");
             System.out.println(ConsoleColors.RESET);
         }
 
@@ -96,22 +105,27 @@ public class CliImpl implements Cli {
                     .filter(s -> !s.startsWith("-"))
                     .collect(Collectors.toList());
 
-            boolean displayMatchingFiles = modifiers.stream().anyMatch(s -> s.contains("d"));
+            boolean displayFirstResult = modifiers.stream().anyMatch(s -> s.contains("d"));
             boolean scanFiles = modifiers.stream().anyMatch(s -> s.contains("a"));
 
-            search.search(tags, scanFiles, displayMatchingFiles);
+            search.search(tags, scanFiles, displayFirstResult);
         }
 
         // see all note objects
         if (args.get(0).equals("all")) {
-            boolean printTags = !(args.size() > 1 && args.get(1).equals("-t"));
+            boolean printTags = args.size() > 1 && args.get(1).equals("-t");
             noteManager.printAllNotes(printTags);
         }
 
         // open note to edit
         if (args.get(0).equals("open")) {
             if (args.size() > 1) {
-                search.open(args.get(1));
+                if (FileUtil.isNumeric(args.get(1))){
+                    search.open(Integer.parseInt(args.get(1)));
+                }
+                else {
+                    search.open(args.get(1));
+                }
             }
             else {
                 search.open();
@@ -159,6 +173,16 @@ public class CliImpl implements Cli {
             }
             else {
                 FileUtil.listDirectory(args.get(1));
+            }
+        }
+
+        // display contents of file
+        if (args.get(0).equals("display")) {
+            if (args.size() > 1 && FileUtil.isNumeric(args.get(1))) {
+                search.display(Integer.parseInt(args.get(1)));
+            }
+            else {
+                System.out.println("Something was wrong with your command. Enter 'help' if you need it");
             }
         }
 
